@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 from room.room_storage import RoomInMemoryStorage
 from user.user_model import User
 from user.user_storage import UserInMemoryStorage
@@ -9,7 +11,8 @@ user_storage: UserInMemoryStorage = UserInMemoryStorage()
 room_storage: RoomInMemoryStorage = RoomInMemoryStorage()
 
 
-class Command:
+class Command(ABC):
+    @abstractmethod
     def execute(self):
         pass
 
@@ -82,7 +85,7 @@ class CommandFactory:
 
 
 class CommandExecutor:
-    def __init__(self, command_factory: CommandFactory = CommandFactory):
+    def __init__(self, command_factory: CommandFactory = CommandFactory()):
         self.command_factory = command_factory
 
     def is_command(self, user_input, user: User):

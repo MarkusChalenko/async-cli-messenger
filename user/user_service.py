@@ -64,23 +64,20 @@ class UserService:
 
     async def _nickname_registration_request(self) -> str:
         self.user.writer.write("Enter your nickname\n".encode())
-        login = (await self.user.reader.readline()).decode().strip()
-        return login
+        return (await self.user.reader.readline()).decode().strip()
 
     async def _login_request(self) -> str:
         self.user.writer.write(f"Enter your login\n".encode())
-        login = (await self.user.reader.readline()).decode().strip()
-        return login
+        return (await self.user.reader.readline()).decode().strip()
 
     async def _password_request(self) -> str:
         self.user.writer.write(f"Enter your password\n".encode())
-        password = (await self.user.reader.readline()).decode().strip()
-        return password
+        return (await self.user.reader.readline()).decode().strip()
 
-    def _check_password(self, passed_password: str, password: str = None) -> bool:
+    def _check_password(self, passed_password: str, password: str | None = None) -> bool:
         if not password:
             password = self.user.password
         return passed_password == password
 
     def _check_login(self, login: str) -> bool:
-        return True if self.storage.get_by_login(login) else False
+        return bool(self.storage.get_by_login(login))

@@ -1,5 +1,3 @@
-from abc import ABC, abstractmethod
-
 from datetime import datetime
 from typing import List, Dict
 
@@ -22,9 +20,10 @@ class ChatRoom:
         try:
             self.message_storage.save_message(message)
             for member in self.members:
-                if member.nickname == message.author:
-                    continue
-                elif member.current_room != self:
+                if (
+                        member.nickname == message.author
+                        or member.current_room != self
+                ):
                     continue
                 else:
                     member.writer.write(message.formatted_message().encode())
@@ -53,30 +52,17 @@ class ChatRoom:
             pass
 
     def have_member(self, member: User) -> bool:
-        return True if member in self.members else False
-
+        return member in self.members
 
 
 class CommonRoom(ChatRoom):
     def __init__(self, name: str = "Common", members: List[User] = []):
         super().__init__(name, members)
 
-    def get_messages(self):
-        pass
-
-    def get_online_members(self):
-        return self.members
-
 
 class PrivateRoom(ChatRoom):
     def __init__(self, name: str = "Private", members: List[User] = []):
         super().__init__(name, members)
-
-    def get_messages(self):
-        pass
-
-    def get_online_members(self):
-        return self.members
 
     def add_member(self, members: List[User]) -> List[User]:
         self.members = self.members + members

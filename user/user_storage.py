@@ -14,11 +14,11 @@ class UserInMemoryStorage:
     def __init__(self):
         self.users: List[User] = []
 
-    def get_by_login(self, login: str) -> User:
+    def get_by_login(self, login: str) -> User | None:
         desired_user = [user for user in self.users if user.login == login]
         return desired_user[0] if desired_user else None
 
-    def get_by_id(self, user_id: uuid) -> User:
+    def get_by_id(self, user_id: uuid) -> User | None:
         desired_user = [user for user in self.users if user.id == user_id]
         return desired_user[0] if desired_user else None
 
