@@ -26,8 +26,7 @@ class ChatRoom:
                 ):
                     continue
                 else:
-                    member.writer.write(message.formatted_message().encode())
-                    return True
+                    member.send_content(message.formatted_message())
         except:
             return False
 
@@ -36,7 +35,8 @@ class ChatRoom:
         return self.message_storage.get_after_time(member_leave_time)
 
     def add_member(self, member: User) -> List[User]:
-        self.members.append(member)
+        if member not in self.members:
+            self.members.append(member)
         return self.members
 
     def member_leave(self, member: User) -> None:
@@ -46,7 +46,7 @@ class ChatRoom:
         try:
             messages_to_send: List[Message] = self.get_messages_after_leave(member)
             self.member_leave_at[member] = None
-            [member.writer.write(message.formatted_message().encode()) for message in messages_to_send]
+            [member.send_content(message.formatted_message()) for message in messages_to_send]
         except:
             # на тот случай, когда комната только создается
             pass

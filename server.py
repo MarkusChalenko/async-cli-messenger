@@ -18,14 +18,16 @@ class Server:
         self.common_room: CommonRoom = room_storage.get_common_room()
         self.host = host
         self.port = port
-        self.clients: Dict[User, Client] = {}
 
     async def client_connected(self, reader: StreamReader, writer: StreamWriter):
         logger.info("Someone are connected")
         client = Client(reader, writer)
-        await client.user_authorize()
-        self._add_member_to_common_room(client)
-        await client.handle_input()
+        user: User = await client.user_authorize()
+        self._add_member_to_common_room(user)
+        try:
+            await client.handle_input()
+        except KeyboardInterrupt:
+            del client
 
     async def listen(self):
         logger.info("Starting server ...")
@@ -36,14 +38,13 @@ class Server:
         async with srv:
             await srv.serve_forever()
 
-    def _add_member_to_common_room(self, member: Client):
-        logger.info(f"Common Room | added user { member.user.nickname }")
-        self.common_room.add_member(member.user)
-        member.user.current_room = room_storage.get_common_room()
-        self._send_last_messages(member)
-        logger.info(f"Common Room | users online: { self.common_room.get_online_members() }")
+    def _add_member_to_common_room(self, user: User):
+        logger.info(f"Common Room | added user { user.nickname }")
+        self.common_room.add_member(user)
+        user.current_room = room_storage.get_common_room()
+        self._send_last_messages(user)
 
-    def _send_last_messages(self, member: Client, count: int = 20):
+    def _send_last_messages(self, user: User, count: int = 20):
         for message in self.common_room.message_storage.messages[-count:]:
-            member.user.writer.write(f"{message.formatted_message()}".encode())
+            user.send_content(f"{message.formatted_message()}")
         return 0

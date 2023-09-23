@@ -10,7 +10,7 @@ class UserService:
     def __init__(self, reader: StreamReader, writer: StreamWriter):
         self.r = reader
         self.w = writer
-        self.user: User = User(reader, writer)
+        self.user: User = User()
         self.storage = UserInMemoryStorage()
 
     async def login(self) -> Optional[User]:
@@ -21,7 +21,7 @@ class UserService:
             self.w.write(f"Hello {self.user.nickname}!\n".encode())
             return self.user
         else:
-            self.user.writer.write("Login or password is incorrect\n".encode())
+            self.w.write("Login or password is incorrect\n".encode())
             return None
 
     async def registration(self) -> User:
@@ -30,7 +30,7 @@ class UserService:
         self.user.nickname = await self._nickname_registration_request()
 
         self.storage.save(self.user)
-        self.user.writer.write("You have successfully registered\n".encode())
+        self.w.write("You have successfully registered\n".encode())
 
         return self.user
 
@@ -43,36 +43,40 @@ class UserService:
         return self.user
 
     async def _login_registration_request(self) -> str:
-        self.user.writer.write("Enter your login\n".encode())
-        login = (await self.user.reader.readline()).decode().strip()
+        self.w.write("Enter your login\n".encode())
+        login = (await self.r.readline()).decode().strip()
         while self._check_login(login):
-            self.user.writer.write("This username is already occupied, choose another one\n".encode())
-            login = (await self.user.reader.readline()).decode().strip()
+            self.w.write("This login is already occupied, choose another one\n".encode())
+            login = (await self.r.readline()).decode().strip()
 
         return login
 
     async def _password_registration_request(self) -> str:
-        self.user.writer.write("Enter your password\n".encode())
-        password = (await self.user.reader.readline()).decode().strip()
+        self.w.write("Enter your password\n".encode())
+        password = (await self.r.readline()).decode().strip()
         password_repeat = None
         while password != password_repeat:
-            self.user.writer.write("Enter your password again\n".encode())
-            password_repeat = (await self.user.reader.readline()).decode().strip()
+            self.w.write("Enter your password again\n".encode())
+            password_repeat = (await self.r.readline()).decode().strip()
             if not self._check_password(password_repeat, password):
-                self.user.writer.write("Incorrect password\n".encode())
+                self.w.write("Incorrect password\n".encode())
         return password
 
     async def _nickname_registration_request(self) -> str:
-        self.user.writer.write("Enter your nickname\n".encode())
-        return (await self.user.reader.readline()).decode().strip()
+        self.w.write("Enter your nickname\n".encode())
+        nickname = (await self.r.readline()).decode().strip()
+        while self._check_nickname(nickname):
+            self.w.write("This nickname is already occupied, choose another one\n".encode())
+            nickname = (await self.r.readline()).decode().strip()
+        return nickname
 
     async def _login_request(self) -> str:
-        self.user.writer.write(f"Enter your login\n".encode())
-        return (await self.user.reader.readline()).decode().strip()
+        self.w.write(f"Enter your login\n".encode())
+        return (await self.r.readline()).decode().strip()
 
     async def _password_request(self) -> str:
-        self.user.writer.write(f"Enter your password\n".encode())
-        return (await self.user.reader.readline()).decode().strip()
+        self.w.write(f"Enter your password\n".encode())
+        return (await self.r.readline()).decode().strip()
 
     def _check_password(self, passed_password: str, password: str | None = None) -> bool:
         if not password:
@@ -81,3 +85,6 @@ class UserService:
 
     def _check_login(self, login: str) -> bool:
         return bool(self.storage.get_by_login(login))
+
+    def _check_nickname(self, nickname: str) -> bool:
+        return bool(self.storage.get_by_nickname(nickname))

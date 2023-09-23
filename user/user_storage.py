@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Dict
 
 from decorators import singleton
 from settings import Node
@@ -13,6 +13,10 @@ logger = get_logger(Node.SERVER)
 class UserInMemoryStorage:
     def __init__(self):
         self.users: List[User] = []
+
+    def get_by_nickname(self, nickname: str) -> User | None:
+        desired_user = [user for user in self.users if user.nickname == nickname]
+        return desired_user[0] if desired_user else None
 
     def get_by_login(self, login: str) -> User | None:
         desired_user = [user for user in self.users if user.login == login]

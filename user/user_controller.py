@@ -27,15 +27,22 @@ class UserController:
 
     async def handle_input(self):
         while True:
-            if self.w.transport.is_closing():
-                return Exception
-            content = (await self.r.readline()).decode().strip()
-            if not content:
+            try:
+                if self.w.transport.is_closing():
+                    logger.error("KeyboardInterrupt | IS_CLOSING")
+                    return KeyboardInterrupt
+                content = (await self.r.readline()).decode().strip()
+                if not content:
+                    continue
+                elif self.command.is_command(content):
+                    self.command.execute_command(content, self.user)
+                else:
+                    self.service.send_message(content)
+            except KeyboardInterrupt as ex:
+                raise ex
+            except Exception as ex:
+                logger.error(ex)
                 continue
-            elif self.command.is_command(content, self.user):
-                self.command.execute_command(content, self.user)
-            else:
-                self.service.send_message(content)
 
     async def _choose(self, chosen: str, *funcs):
         if chosen == '1':

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Dict
 
 from room.room_storage import RoomInMemoryStorage
 from user.user_model import User
@@ -24,7 +25,7 @@ class CommandCreatePrivateRoom(Command):
 
     def execute(self):
         try:
-            second_user: User = user_storage.get_by_login(self.login)
+            second_user: User = user_storage.get_by_nickname(self.login)
 
             have_room_already = room_storage.get_private_chat_room((self.user, second_user))
             if not have_room_already:
@@ -32,20 +33,20 @@ class CommandCreatePrivateRoom(Command):
 
             self.user.set_room(room_storage.get_private_chat_room((self.user, second_user)))
         except:
-            self.user.writer.write("No such user\n".encode())
+            self.user.send_content("No such user")
 
 
 class CommandChangeChatRoom(Command):
     def __init__(self, user: User, second_user_login: str):
         self.user = user
-        self.second_user = user_storage.get_by_login(second_user_login)
+        self.second_user = user_storage.get_by_nickname(second_user_login)
 
     def execute(self):
         room = room_storage.get_private_chat_room((self.user, self.second_user))
         if room:
             self.user.set_room(room)
         else:
-            self.user.writer.write(f"Cant find this room\n".encode())
+            self.user.send_content(f"Cant find this room")
 
 
 class CommandChangeToCommonRoom(Command):
@@ -61,10 +62,27 @@ class CommandGetUserRooms(Command):
         self.user: User = user
 
     def execute(self):
-        self.user.writer.write(f"Rooms:\n".encode())
-        for name, room in room_storage.chat_rooms:
+        self.user.send_content(f"Rooms:")
+        for name, room in room_storage.chat_rooms.items():
             if room.have_member(self.user):
-                self.user.writer.write(f"{room.name}\n".encode())
+                self.user.send_content(f"{room.name}")
+        return 0
+
+
+class CommandHelp(Command):
+    def __init__(self, user: User):
+        self.user: User = user
+
+    commands: Dict[str, str] = {
+        "/chat [User login]": "Создание приватного чата с пользователем",
+        "/goto [User login]": "Вход в существующий приватный чат с пользователем",
+        "/common": "Переход в общий чат",
+        "/rooms": "Список чатов юзера",
+    }
+
+    def execute(self):
+        for name, description in self.commands.items():
+            self.user.send_content(f"'{name}' - {description}")
         return 0
 
 
@@ -80,7 +98,10 @@ class CommandFactory:
             return CommandChangeToCommonRoom(user)
         elif command_call[0] == "/rooms":
             return CommandGetUserRooms(user)
+        elif command_call[0] == "/help":
+            return CommandHelp(user)
         else:
+            user.send_content("Incorrect command title")
             return None
 
 
@@ -88,8 +109,8 @@ class CommandExecutor:
     def __init__(self, command_factory: CommandFactory = CommandFactory()):
         self.command_factory = command_factory
 
-    def is_command(self, user_input, user: User):
-        return True if self.command_factory.create_command(user_input, user) else False
+    def is_command(self, user_input: str):
+        return True if user_input.startswith('/') else False
 
     def execute_command(self, command_call, user: User):
         command = self.command_factory.create_command(command_call, user)

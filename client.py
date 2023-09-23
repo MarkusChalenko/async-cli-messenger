@@ -12,15 +12,20 @@ class Client:
     def __init__(self, reader: StreamReader, writer: StreamWriter):
         self.reader = reader
         self.writer = writer
-        self.user: None | User = None
         self.user_controller = UserController(reader, writer)
 
     async def user_authorize(self):
-        self.user: User = await self.user_controller.authorize()
-        return self.user
+        user: None | User = None
+        while not user:
+            try:
+                user: User = await self.user_controller.authorize()
+            except BaseException:
+                continue
+        user.clients.append(self)
+        return user
 
     async def handle_input(self):
         try:
             await self.user_controller.handle_input()
-        except BaseException as ex:
-            return ex
+        except KeyboardInterrupt:
+            raise KeyboardInterrupt

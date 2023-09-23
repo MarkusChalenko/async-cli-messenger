@@ -11,4 +11,4 @@ class Message:
         self.timestamp: str = datetime.today().strftime('%H:%M:%S')
 
     def formatted_message(self) -> str:
-        return f"({self.timestamp}) {self.author} >>> {self.content}\n"
+        return f"({self.timestamp}) {self.author} >>> {self.content}"
